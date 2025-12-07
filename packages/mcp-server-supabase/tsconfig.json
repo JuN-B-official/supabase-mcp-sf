@@ -1,7 +1,8 @@
 {
   "extends": "@total-typescript/tsconfig/tsc/dom/library",
   "compilerOptions": {
-    "target": "ES2020"
+    "target": "ES2020",
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts"

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tool } from '@jun-b/mcp-utils';
+import { tool } from '../mcp-utils/server.js';
 
 export type AuthOperations = {
     listUsers(projectId: string, options?: ListUsersOptions): Promise<User[]>;

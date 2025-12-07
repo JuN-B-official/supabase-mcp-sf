@@ -2,8 +2,8 @@
   "name": "@jun-b/supabase-mcp-sf",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @jun-b/mcp-utils --filter @jun-b/supabase-mcp-sf build",
-    "test": "pnpm --parallel --filter @jun-b/mcp-utils --filter @jun-b/supabase-mcp-sf test",
+    "build": "pnpm --filter @jun-b/supabase-mcp-sf build",
+    "test": "pnpm --filter @jun-b/supabase-mcp-sf test",
     "test:coverage": "pnpm --filter @jun-b/supabase-mcp-sf test:coverage",
     "format": "biome check --write .",
     "format:check": "biome check ."

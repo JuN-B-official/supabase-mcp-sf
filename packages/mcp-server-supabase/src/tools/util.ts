@@ -1,4 +1,4 @@
-import { type Tool, tool } from '@jun-b/mcp-utils';
+import { type Tool, tool } from '../mcp-utils/server.js';
 import type { z } from 'zod';
 
 type RequireKeys<Injected, Params> = {
@@ -54,10 +54,10 @@ export function injectableTool<
 
   type CleanParams = z.infer<Params> extends any
     ? {
-        [K in keyof z.infer<Params> as K extends NonNullableKeys
-          ? never
-          : K]: z.infer<Params>[K];
-      }
+      [K in keyof z.infer<Params> as K extends NonNullableKeys
+      ? never
+      : K]: z.infer<Params>[K];
+    }
     : never;
 
   return tool({

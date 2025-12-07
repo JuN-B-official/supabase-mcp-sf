@@ -2,7 +2,7 @@ import {
   createMcpServer,
   type Tool,
   type ToolCallCallback,
-} from '@jun-b/mcp-utils';
+} from './mcp-utils/server.js';
 import packageJson from '../package.json' with { type: 'json' };
 import type { SupabasePlatform } from './platform/types.js';
 import { getAuthTools } from './tools/auth-tools.js';

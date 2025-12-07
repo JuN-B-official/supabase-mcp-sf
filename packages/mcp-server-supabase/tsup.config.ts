@@ -11,7 +11,7 @@ export default defineConfig([
     format: ['cjs', 'esm'],
     outDir: 'dist',
     sourcemap: true,
-    dts: true,
+    dts: false,
     minify: true,
     splitting: true,
     loader: {

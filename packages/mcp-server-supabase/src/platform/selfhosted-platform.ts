@@ -1,4 +1,4 @@
-import type { InitData } from '@jun-b/mcp-utils';
+import type { InitData } from '../mcp-utils/server.js';
 import type {
     DatabaseOperations,
     DebuggingOperations,
