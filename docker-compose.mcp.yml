@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Docker Compose for Supabase MCP Server
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Usage:
+#   docker compose -f docker-compose.mcp.yml up -d
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  supabase-mcp:
+    build: .
+    container_name: supabase-mcp-sf
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL:-http://host.docker.internal:8000}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+    # For stdio transport, use stdin_open and tty
+    stdin_open: true
+    tty: true
+    # Network: use host network to access local Supabase
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Optional: mount scripts for run_script tool
+    # volumes:
+    #   - ./scripts:/app/scripts:ro

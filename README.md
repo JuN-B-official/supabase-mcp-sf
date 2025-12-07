@@ -34,6 +34,26 @@ npx @jun-b/supabase-mcp-sf
 
 That's it! No global installation required.
 
+### Docker (Optional)
+
+For server deployment (EasyPanel, Coolify, etc.):
+
+```bash
+# Build
+docker build -t supabase-mcp-sf .
+
+# Run
+docker run -e SUPABASE_URL=http://host.docker.internal:8000 \
+           -e SUPABASE_SERVICE_ROLE_KEY=your-key \
+           supabase-mcp-sf
+```
+
+Or use Docker Compose:
+
+```bash
+docker compose -f docker-compose.mcp.yml up -d
+```
+
 ## Configuration
 
 ### Claude Desktop / Cursor

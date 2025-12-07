@@ -4,9 +4,9 @@ export default defineConfig([
   {
     entry: [
       'src/index.ts',
-      'src/transports/stdio.ts',
+      'src/transports/stdio-selfhosted.ts',
       'src/platform/index.ts',
-      'src/platform/api-platform.ts',
+      'src/platform/selfhosted-platform.ts',
     ],
     format: ['cjs', 'esm'],
     outDir: 'dist',
