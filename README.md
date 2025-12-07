@@ -3,9 +3,12 @@
 > MCP Server for Self-Hosted Supabase - Optimized for single-instance management
 
 [![npm version](https://img.shields.io/npm/v/@jun-b/supabase-mcp-sf@latest)](https://www.npmjs.com/package/@jun-b/supabase-mcp-sf@latest)
-[![License](https://img.shields.io/npm/l/@jun-b/supabase-mcp-sf@latest)](https://github.com/Song-JunHyeong/supabase-sf/blob/master/LICENSE)
 
 Connect AI assistants (Claude, Cursor, etc.) directly to your self-hosted Supabase instance via the [Model Context Protocol](https://modelcontextprotocol.io/introduction).
+
+# Related projects
+
+- [supabase-sf](https://github.com/Song-JunHyeong/supabase-sf)
 
 ## Key Features
 
