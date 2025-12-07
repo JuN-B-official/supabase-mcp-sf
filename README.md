@@ -68,7 +68,7 @@ docker compose -f docker-compose.mcp.yml up -d
       "command": "npx",
       "args": ["-y", "@jun-b/supabase-mcp-sf"],
       "env": {
-        "SUPABASE_URL": "http://localhost:8000",
+        "SUPABASE_URL": "http://localhost",
         "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key",
         "SUPABASE_ANON_KEY": "your-anon-key"
       }

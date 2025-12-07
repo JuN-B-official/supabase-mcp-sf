@@ -26,7 +26,7 @@ import { getLogQuery } from '../logs.js';
 export type SelfHostedPlatformOptions = {
     /**
      * The URL for the self-hosted Supabase instance.
-     * Example: http://localhost:8000 or https://supabase.yourdomain.com
+     * Example: http://localhost or https://supabase.yourdomain.com
      */
     supabaseUrl: string;
 

@@ -23,7 +23,7 @@ async function main() {
         options: {
             ['supabase-url']: {
                 type: 'string',
-                description: 'Self-hosted Supabase URL (e.g., http://localhost:8000)',
+                description: 'Self-hosted Supabase URL (e.g., http://localhost or https://supabase.example.com)',
             },
             ['service-role-key']: {
                 type: 'string',
