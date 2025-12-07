@@ -2,20 +2,19 @@ import {
   createMcpServer,
   type Tool,
   type ToolCallCallback,
-} from '@supabase/mcp-utils';
+} from '@jun-b/mcp-utils';
 import packageJson from '../package.json' with { type: 'json' };
-import { createContentApiClient } from './content-api/index.js';
 import type { SupabasePlatform } from './platform/types.js';
-import { getAccountTools } from './tools/account-tools.js';
+import { getAuthTools } from './tools/auth-tools.js';
 import { getBranchingTools } from './tools/branching-tools.js';
 import { getDatabaseTools } from './tools/database-operation-tools.js';
 import { getDebuggingTools } from './tools/debugging-tools.js';
 import { getDevelopmentTools } from './tools/development-tools.js';
 import { getDocsTools } from './tools/docs-tools.js';
 import { getEdgeFunctionTools } from './tools/edge-function-tools.js';
+import { getOperationsTools } from './tools/operations-tools.js';
 import { getStorageTools } from './tools/storage-tools.js';
 import type { FeatureGroup } from './types.js';
-import { parseFeatureGroups } from './util.js';
 
 const { version } = packageJson;
 
@@ -26,15 +25,8 @@ export type SupabaseMcpServerOptions = {
   platform: SupabasePlatform;
 
   /**
-   * The API URL for the Supabase Content API.
-   */
-  contentApiUrl?: string;
-
-  /**
    * The project ID to scope the server to.
-   *
-   * If undefined, the server will have access
-   * to all organizations and projects for the user.
+   * For self-hosted, this defaults to 'default'.
    */
   projectId?: string;
 
@@ -45,7 +37,7 @@ export type SupabaseMcpServerOptions = {
 
   /**
    * Features to enable.
-   * Options: 'account', 'branching', 'database', 'debugging', 'development', 'docs', 'functions', 'storage'
+   * Options: 'database', 'debugging', 'development', 'storage', 'auth', 'functions', 'branching', 'docs', 'operations'
    */
   features?: string[];
 
@@ -55,87 +47,58 @@ export type SupabaseMcpServerOptions = {
   onToolCall?: ToolCallCallback;
 };
 
-const DEFAULT_FEATURES: FeatureGroup[] = [
-  'docs',
-  'account',
+// Self-hosted available features
+const SELFHOSTED_FEATURES: FeatureGroup[] = [
   'database',
   'debugging',
   'development',
+  'storage',
+  'auth',
   'functions',
   'branching',
+  'docs',
+  'operations',
 ];
 
-export const PLATFORM_INDEPENDENT_FEATURES: FeatureGroup[] = ['docs'];
-
 /**
- * Creates an MCP server for interacting with Supabase.
+ * Creates an MCP server for interacting with self-hosted Supabase.
  */
 export function createSupabaseMcpServer(options: SupabaseMcpServerOptions) {
   const {
     platform,
-    projectId,
+    projectId = 'default',
     readOnly,
     features,
-    contentApiUrl = 'https://supabase.com/docs/api/graphql',
     onToolCall,
   } = options;
 
-  const contentApiClientPromise = createContentApiClient(contentApiUrl, {
-    'User-Agent': `supabase-mcp/${version}`,
-  });
-
-  // Filter the default features based on the platform's capabilities
-  const availableDefaultFeatures = DEFAULT_FEATURES.filter(
-    (key) =>
-      PLATFORM_INDEPENDENT_FEATURES.includes(key) ||
-      Object.keys(platform).includes(key)
-  );
-
-  // Validate the desired features against the platform's available features
-  const enabledFeatures = parseFeatureGroups(
-    platform,
-    features ?? availableDefaultFeatures
+  // Filter features based on what's available
+  const enabledFeatures = new Set<FeatureGroup>(
+    (features as FeatureGroup[] | undefined) ?? SELFHOSTED_FEATURES
   );
 
   const server = createMcpServer({
-    name: 'supabase',
-    title: 'Supabase',
+    name: 'supabase-mcp-sf',
+    title: 'Supabase MCP (Self-Hosted)',
     version,
     async onInitialize(info) {
-      // Note: in stateless HTTP mode, `onInitialize` will not always be called
-      // so we cannot rely on it for initialization. It's still useful for telemetry.
-      const { clientInfo } = info;
-      const userAgent = `supabase-mcp/${version} (${clientInfo.name}/${clientInfo.version})`;
-
-      await Promise.all([
-        platform.init?.(info),
-        contentApiClientPromise.then((client) =>
-          client.setUserAgent(userAgent)
-        ),
-      ]);
+      await platform.init?.(info);
     },
     onToolCall,
     tools: async () => {
-      const contentApiClient = await contentApiClientPromise;
       const tools: Record<string, Tool> = {};
 
       const {
-        account,
         database,
-        functions,
         debugging,
         development,
         storage,
+        auth,
+        functions,
         branching,
+        docs,
+        operations,
       } = platform;
-
-      if (enabledFeatures.has('docs')) {
-        Object.assign(tools, getDocsTools({ contentApiClient }));
-      }
-
-      if (!projectId && account && enabledFeatures.has('account')) {
-        Object.assign(tools, getAccountTools({ account, readOnly }));
-      }
 
       if (database && enabledFeatures.has('database')) {
         Object.assign(
@@ -156,22 +119,28 @@ export function createSupabaseMcpServer(options: SupabaseMcpServerOptions) {
         Object.assign(tools, getDevelopmentTools({ development, projectId }));
       }
 
+      if (storage && enabledFeatures.has('storage')) {
+        Object.assign(tools, getStorageTools({ storage, projectId, readOnly }));
+      }
+
+      if (auth && enabledFeatures.has('auth')) {
+        Object.assign(tools, getAuthTools({ auth, projectId, readOnly }));
+      }
+
       if (functions && enabledFeatures.has('functions')) {
-        Object.assign(
-          tools,
-          getEdgeFunctionTools({ functions, projectId, readOnly })
-        );
+        Object.assign(tools, getEdgeFunctionTools({ functions, projectId, readOnly }));
       }
 
       if (branching && enabledFeatures.has('branching')) {
-        Object.assign(
-          tools,
-          getBranchingTools({ branching, projectId, readOnly })
-        );
+        Object.assign(tools, getBranchingTools({ branching, projectId, readOnly }));
       }
 
-      if (storage && enabledFeatures.has('storage')) {
-        Object.assign(tools, getStorageTools({ storage, projectId, readOnly }));
+      if (docs && enabledFeatures.has('docs')) {
+        Object.assign(tools, getDocsTools({ docs }));
+      }
+
+      if (operations && enabledFeatures.has('operations')) {
+        Object.assign(tools, getOperationsTools({ operations, projectId, readOnly }));
       }
 
       return tools;

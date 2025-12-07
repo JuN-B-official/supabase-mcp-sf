@@ -1,15 +1,15 @@
-import type { InitData } from '@supabase/mcp-utils';
+import type { InitData } from '@jun-b/mcp-utils';
 import { z } from 'zod';
-import { AWS_REGION_CODES } from '../regions.js';
 
 export type SuccessResponse = {
   success: true;
 };
 
+// Storage schemas
 export const storageBucketSchema = z.object({
   id: z.string(),
   name: z.string(),
-  owner: z.string(),
+  owner: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
   public: z.boolean(),
@@ -23,96 +23,18 @@ export const storageConfigSchema = z.object({
   }),
 });
 
-export const organizationSchema = z.object({
-  id: z.string(),
+export const storageFileSchema = z.object({
   name: z.string(),
-  plan: z.string().optional(),
-  allowed_release_channels: z.array(z.string()),
-  opt_in_tags: z.array(z.string()),
+  id: z.string().optional(),
+  updated_at: z.string().optional(),
+  created_at: z.string().optional(),
+  last_accessed_at: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
-export const projectSchema = z.object({
-  id: z.string(),
-  organization_id: z.string(),
-  name: z.string(),
-  status: z.string(),
-  created_at: z.string(),
-  region: z.string(),
-});
+export type StorageFile = z.infer<typeof storageFileSchema>;
 
-export const branchSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  project_ref: z.string(),
-  parent_project_ref: z.string(),
-  is_default: z.boolean(),
-  git_branch: z.string().optional(),
-  pr_number: z.number().optional(),
-  latest_check_run_id: z.number().optional(),
-  persistent: z.boolean(),
-  status: z.enum([
-    'CREATING_PROJECT',
-    'RUNNING_MIGRATIONS',
-    'MIGRATIONS_PASSED',
-    'MIGRATIONS_FAILED',
-    'FUNCTIONS_DEPLOYED',
-    'FUNCTIONS_FAILED',
-  ]),
-  created_at: z.string(),
-  updated_at: z.string(),
-});
-
-export const edgeFunctionSchema = z.object({
-  id: z.string(),
-  slug: z.string(),
-  name: z.string(),
-  status: z.string(),
-  version: z.number(),
-  created_at: z.number().optional(),
-  updated_at: z.number().optional(),
-  verify_jwt: z.boolean().optional(),
-  import_map: z.boolean().optional(),
-  import_map_path: z.string().optional(),
-  entrypoint_path: z.string().optional(),
-});
-
-export const edgeFunctionWithBodySchema = edgeFunctionSchema.extend({
-  files: z.array(
-    z.object({
-      name: z.string(),
-      content: z.string(),
-    })
-  ),
-});
-
-export const createProjectOptionsSchema = z.object({
-  name: z.string(),
-  organization_id: z.string(),
-  region: z.enum(AWS_REGION_CODES),
-  db_pass: z.string().optional(),
-});
-
-export const createBranchOptionsSchema = z.object({
-  name: z.string(),
-});
-
-export const resetBranchOptionsSchema = z.object({
-  migration_version: z.string().optional(),
-});
-
-export const deployEdgeFunctionOptionsSchema = z.object({
-  name: z.string(),
-  entrypoint_path: z.string(),
-  import_map_path: z.string().optional(),
-  verify_jwt: z.boolean().optional(),
-  files: z.array(
-    z.object({
-      name: z.string(),
-      content: z.string(),
-    })
-  ),
-});
-
+// Database schemas
 export const executeSqlOptionsSchema = z.object({
   query: z.string(),
   parameters: z.array(z.unknown()).optional(),
@@ -129,14 +51,14 @@ export const migrationSchema = z.object({
   name: z.string().optional(),
 });
 
+// Logs schemas
 export const logsServiceSchema = z.enum([
   'api',
-  'branch-action',
   'postgres',
-  'edge-function',
   'auth',
   'storage',
   'realtime',
+  'functions',
 ]);
 
 export const getLogsOptionsSchema = z.object({
@@ -149,19 +71,7 @@ export const generateTypescriptTypesResultSchema = z.object({
   types: z.string(),
 });
 
-export type Organization = z.infer<typeof organizationSchema>;
-export type Project = z.infer<typeof projectSchema>;
-export type Branch = z.infer<typeof branchSchema>;
-export type EdgeFunction = z.infer<typeof edgeFunctionSchema>;
-export type EdgeFunctionWithBody = z.infer<typeof edgeFunctionWithBodySchema>;
-
-export type CreateProjectOptions = z.infer<typeof createProjectOptionsSchema>;
-export type CreateBranchOptions = z.infer<typeof createBranchOptionsSchema>;
-export type ResetBranchOptions = z.infer<typeof resetBranchOptionsSchema>;
-export type DeployEdgeFunctionOptions = z.infer<
-  typeof deployEdgeFunctionOptionsSchema
->;
-
+// Type exports
 export type ExecuteSqlOptions = z.infer<typeof executeSqlOptionsSchema>;
 export type ApplyMigrationOptions = z.infer<typeof applyMigrationOptionsSchema>;
 export type Migration = z.infer<typeof migrationSchema>;
@@ -176,43 +86,6 @@ export type GenerateTypescriptTypesResult = z.infer<
 export type StorageConfig = z.infer<typeof storageConfigSchema>;
 export type StorageBucket = z.infer<typeof storageBucketSchema>;
 
-export type DatabaseOperations = {
-  executeSql<T>(projectId: string, options: ExecuteSqlOptions): Promise<T[]>;
-  listMigrations(projectId: string): Promise<Migration[]>;
-  applyMigration(
-    projectId: string,
-    options: ApplyMigrationOptions
-  ): Promise<void>;
-};
-
-export type AccountOperations = {
-  listOrganizations(): Promise<Pick<Organization, 'id' | 'name'>[]>;
-  getOrganization(organizationId: string): Promise<Organization>;
-  listProjects(): Promise<Project[]>;
-  getProject(projectId: string): Promise<Project>;
-  createProject(options: CreateProjectOptions): Promise<Project>;
-  pauseProject(projectId: string): Promise<void>;
-  restoreProject(projectId: string): Promise<void>;
-};
-
-export type EdgeFunctionsOperations = {
-  listEdgeFunctions(projectId: string): Promise<EdgeFunction[]>;
-  getEdgeFunction(
-    projectId: string,
-    functionSlug: string
-  ): Promise<EdgeFunctionWithBody>;
-  deployEdgeFunction(
-    projectId: string,
-    options: DeployEdgeFunctionOptions
-  ): Promise<Omit<EdgeFunction, 'files'>>;
-};
-
-export type DebuggingOperations = {
-  getLogs(projectId: string, options: GetLogsOptions): Promise<unknown>;
-  getSecurityAdvisors(projectId: string): Promise<unknown>;
-  getPerformanceAdvisors(projectId: string): Promise<unknown>;
-};
-
 export const apiKeyTypeSchema = z.enum(['legacy', 'publishable']);
 export type ApiKeyType = z.infer<typeof apiKeyTypeSchema>;
 
@@ -223,6 +96,22 @@ export type ApiKey = {
   description?: string;
   id?: string;
   disabled?: boolean;
+};
+
+// Operations interfaces
+export type DatabaseOperations = {
+  executeSql<T>(projectId: string, options: ExecuteSqlOptions): Promise<T[]>;
+  listMigrations(projectId: string): Promise<Migration[]>;
+  applyMigration(
+    projectId: string,
+    options: ApplyMigrationOptions
+  ): Promise<void>;
+};
+
+export type DebuggingOperations = {
+  getLogs(projectId: string, options: GetLogsOptions): Promise<unknown>;
+  getSecurityAdvisors(projectId: string): Promise<unknown>;
+  getPerformanceAdvisors(projectId: string): Promise<unknown>;
 };
 
 export type DevelopmentOperations = {
@@ -237,27 +126,40 @@ export type StorageOperations = {
   getStorageConfig(projectId: string): Promise<StorageConfig>;
   updateStorageConfig(projectId: string, config: StorageConfig): Promise<void>;
   listAllBuckets(projectId: string): Promise<StorageBucket[]>;
+  // File operations
+  listFiles(projectId: string, bucket: string, path?: string): Promise<StorageFile[]>;
+  uploadFile(projectId: string, bucket: string, path: string, content: string, contentType?: string): Promise<{ path: string }>;
+  downloadFile(projectId: string, bucket: string, path: string): Promise<{ signedUrl: string }>;
+  deleteFile(projectId: string, bucket: string, paths: string[]): Promise<void>;
+  createSignedUrl(projectId: string, bucket: string, path: string, expiresIn: number): Promise<{ signedUrl: string }>;
 };
 
-export type BranchingOperations = {
-  listBranches(projectId: string): Promise<Branch[]>;
-  createBranch(
-    projectId: string,
-    options: CreateBranchOptions
-  ): Promise<Branch>;
-  deleteBranch(branchId: string): Promise<void>;
-  mergeBranch(branchId: string): Promise<void>;
-  resetBranch(branchId: string, options: ResetBranchOptions): Promise<void>;
-  rebaseBranch(branchId: string): Promise<void>;
-};
+// Re-export from separate type files
+export type { AuthOperations } from '../auth/types.js';
+export type { EdgeFunctionsOperations } from '../functions/types.js';
+export type { BranchingOperations } from '../branching/types.js';
+export type { DocsOperations } from '../docs/types.js';
+export type { OperationsOperations } from '../operations/types.js';
 
+// Import for SupabasePlatform
+import type { AuthOperations } from '../auth/types.js';
+import type { EdgeFunctionsOperations } from '../functions/types.js';
+import type { BranchingOperations } from '../branching/types.js';
+import type { DocsOperations } from '../docs/types.js';
+import type { OperationsOperations } from '../operations/types.js';
+
+/**
+ * Self-hosted Supabase platform interface.
+ */
 export type SupabasePlatform = {
   init?(info: InitData): Promise<void>;
-  account?: AccountOperations;
   database?: DatabaseOperations;
-  functions?: EdgeFunctionsOperations;
   debugging?: DebuggingOperations;
   development?: DevelopmentOperations;
   storage?: StorageOperations;
+  auth?: AuthOperations;
+  functions?: EdgeFunctionsOperations;
   branching?: BranchingOperations;
+  docs?: DocsOperations;
+  operations?: OperationsOperations;
 };

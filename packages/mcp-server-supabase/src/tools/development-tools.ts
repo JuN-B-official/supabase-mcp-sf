@@ -49,6 +49,25 @@ export function getDevelopmentTools({
         return development.getPublishableKeys(project_id);
       },
     }),
+    get_anon_key: injectableTool({
+      description: 'Gets the anonymous (public) API key for a project. This key is safe to use in client-side code.',
+      annotations: {
+        title: 'Get anon key',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      parameters: z.object({
+        project_id: z.string(),
+      }),
+      inject: { project_id },
+      execute: async ({ project_id }) => {
+        const keys = await development.getPublishableKeys(project_id);
+        const anonKey = keys.find(k => k.type === 'legacy' && k.name === 'anon');
+        return anonKey ? { anon_key: anonKey.api_key } : { anon_key: null, message: 'Anon key not found. Check get_publishable_keys for all available keys.' };
+      },
+    }),
     generate_typescript_types: injectableTool({
       description: 'Generates TypeScript types for a project.',
       annotations: {

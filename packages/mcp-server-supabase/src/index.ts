@@ -1,6 +1,6 @@
 import packageJson from '../package.json' with { type: 'json' };
 
-export type { ToolCallCallback } from '@supabase/mcp-utils';
+export type { ToolCallCallback } from '@jun-b/mcp-utils';
 export type { SupabasePlatform } from './platform/index.js';
 export {
   createSupabaseMcpServer,

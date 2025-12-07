@@ -1,41 +1,36 @@
-import { tool } from '@supabase/mcp-utils';
-import { source } from 'common-tags';
 import { z } from 'zod';
-import type { ContentApiClient } from '../content-api/index.js';
+import type { DocsOperations } from '../docs/types.js';
+import { injectableTool } from './util.js';
 
 export type DocsToolsOptions = {
-  contentApiClient: ContentApiClient;
+    docs: DocsOperations;
 };
 
-export function getDocsTools({ contentApiClient }: DocsToolsOptions) {
-  return {
-    search_docs: tool({
-      description: async () => {
-        const schema = await contentApiClient.loadSchema();
+export function getDocsTools({ docs }: DocsToolsOptions) {
+    const docsTools = {
+        search_docs: injectableTool({
+            description: `Searches Supabase official documentation for relevant information.
+Use this tool to find documentation about:
+- Supabase features and APIs
+- Best practices and guides
+- Configuration options
+- SDK usage examples`,
+            annotations: {
+                title: 'Search Docs',
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
+            parameters: z.object({
+                query: z.string().describe('Search query for documentation'),
+            }),
+            inject: {},
+            execute: async ({ query }) => {
+                return await docs.searchDocs(query);
+            },
+        }),
+    };
 
-        return source`
-          Search the Supabase documentation using GraphQL. Must be a valid GraphQL query.
-          You should default to calling this even if you think you already know the answer, since the documentation is always being updated.
-
-          Below is the GraphQL schema for this tool:
-
-          ${schema}
-        `;
-      },
-      annotations: {
-        title: 'Search docs',
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false,
-      },
-      parameters: z.object({
-        // Intentionally use a verbose param name for the LLM
-        graphql_query: z.string().describe('GraphQL query string'),
-      }),
-      execute: async ({ graphql_query }) => {
-        return await contentApiClient.query({ query: graphql_query });
-      },
-    }),
-  };
+    return docsTools;
 }

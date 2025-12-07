@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { SupabasePlatform } from './platform/types.js';
-import { PLATFORM_INDEPENDENT_FEATURES } from './server.js';
 import {
   currentFeatureGroupSchema,
   featureGroupSchema,
@@ -12,8 +11,8 @@ export type ValueOf<T> = T[keyof T];
 // UnionToIntersection<A | B> = A & B
 export type UnionToIntersection<U> = (
   U extends unknown
-    ? (arg: U) => 0
-    : never
+  ? (arg: U) => 0
+  : never
 ) extends (arg: infer I) => 0
   ? I
   : never;
@@ -92,12 +91,9 @@ export function parseFeatureGroups(
   const desiredFeatures = z.set(featureGroupSchema).parse(new Set(features));
 
   // The platform implementation can define a subset of features
-  const availableFeatures: FeatureGroup[] = [
-    ...PLATFORM_INDEPENDENT_FEATURES,
-    ...currentFeatureGroupSchema.options.filter((key) =>
-      Object.keys(platform).includes(key)
-    ),
-  ];
+  const availableFeatures: FeatureGroup[] = currentFeatureGroupSchema.options.filter(
+    (key) => Object.keys(platform).includes(key)
+  );
 
   const availableFeaturesSchema = z.enum(
     availableFeatures as [string, ...string[]],

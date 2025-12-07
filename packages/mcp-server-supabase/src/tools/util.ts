@@ -1,4 +1,4 @@
-import { type Tool, tool } from '@supabase/mcp-utils';
+import { type Tool, tool } from '@jun-b/mcp-utils';
 import type { z } from 'zod';
 
 type RequireKeys<Injected, Params> = {

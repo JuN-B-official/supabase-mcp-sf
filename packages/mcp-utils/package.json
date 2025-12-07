@@ -1,7 +1,7 @@
 {
-  "name": "@supabase/mcp-utils",
-  "version": "0.2.4",
-  "description": "MCP utilities",
+  "name": "@jun-b/mcp-utils",
+  "version": "1.0.0",
+  "description": "MCP utilities for self-hosted Supabase",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.cjs",
@@ -16,7 +16,9 @@
     "test:coverage": "vitest --coverage",
     "prepublishOnly": "pnpm build"
   },
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
