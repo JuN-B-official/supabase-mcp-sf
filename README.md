@@ -2,6 +2,8 @@
 
 > MCP Server for Self-Hosted Supabase - Optimized for single-instance management
 
+This is a one-person project, built and maintained in spare time.
+
 [![npm version](https://img.shields.io/npm/v/@jun-b/supabase-mcp-sf@latest)](https://www.npmjs.com/package/@jun-b/supabase-mcp-sf@latest)
 
 ## 💖 Sponsor
@@ -213,37 +215,155 @@ supabase-mcp-sf --features database,operations
 supabase-mcp-sf --features database,debugging,development,storage,auth,functions,branching,docs,operations
 ```
 
-## Security
+## Security Best Practices
 
-### Read-Only Mode
+> ⚠️ **Important**: Security is critical when connecting AI assistants to your database. Follow these best practices to protect your data.
+
+### 1. Use Read-Only Mode (Recommended)
+
+**Always start with read-only mode**, especially in production environments:
 
 ```bash
 supabase-mcp-sf --read-only
 ```
 
-Disables all write operations (migrations, file uploads, user creation, etc.)
+```json
+{
+  "mcpServers": {
+    "supabase-sf": {
+      "command": "npx",
+      "args": ["-y", "@jun-b/supabase-mcp-sf@latest", "--read-only"],
+      "env": {
+        "SUPABASE_URL": "<URL>",
+        "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key"
+      }
+    }
+  }
+}
+```
 
-### Custom AI Agent Role
+This disables all write operations:
+- ❌ SQL INSERT/UPDATE/DELETE
+- ❌ File uploads
+- ❌ User creation/deletion
+- ❌ Migration applications
+- ❌ Secret rotations
 
-For production, create a dedicated database role for AI agents:
+### 2. Service Role Key Precautions
+
+> 🚨 **Critical Warning**: `SERVICE_ROLE_KEY` **bypasses all Row Level Security (RLS)** policies. It has full database access.
+
+| Key Type | RLS | Use Case | Risk Level |
+|----------|-----|----------|------------|
+| `SERVICE_ROLE_KEY` | ❌ Bypassed | Admin operations, server-side only | 🔴 High |
+| `ANON_KEY` | ✅ Applied | Client-side, public APIs | 🟢 Low |
+
+**Recommendations:**
+- ✅ **Only use SERVICE_ROLE_KEY in trusted, server-side environments**
+- ✅ **Never expose SERVICE_ROLE_KEY to client-side code**
+- ✅ **Prefer ANON_KEY when RLS policies are properly configured**
+- ✅ **Rotate keys regularly using `rotate_secret` tool**
+
+### 3. Row Level Security (RLS)
+
+RLS is your primary defense layer. Always enable it:
+
+```sql
+-- Enable RLS on all tables
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- Force RLS for table owners too
+ALTER TABLE public.your_table FORCE ROW LEVEL SECURITY;
+```
+
+> **💡 Note**: When using `ANON_KEY`, all queries respect RLS policies. This is the safest way to let AI access your data.
+
+### 4. Custom AI Agent Role (Production Recommended)
+
+For production, create a dedicated database role for AI agents with minimal permissions:
 
 ```sql
 -- Create AI agent role with limited permissions
-CREATE ROLE ai_agent WITH LOGIN PASSWORD 'secure-password';
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO ai_agent;
-GRANT EXECUTE ON FUNCTION specific_functions TO ai_agent;
+CREATE ROLE ai_agent WITH LOGIN PASSWORD 'secure-random-password-here';
+
+-- Grant only SELECT on specific tables
+GRANT SELECT ON public.products, public.categories TO ai_agent;
+
+-- Grant EXECUTE on specific functions only
+GRANT EXECUTE ON FUNCTION public.search_products TO ai_agent;
+
+-- Deny access to sensitive tables
+REVOKE ALL ON auth.users FROM ai_agent;
+REVOKE ALL ON storage.objects FROM ai_agent;
 ```
 
-> **💡 Tip**: Combine with PostgREST's Row Level Security (RLS) for maximum control. Create policies specifically for the `ai_agent` role to strictly limit what data the AI can see or modify.
+#### RLS Policies for AI Agent
+
+Create RLS policies specifically for the `ai_agent` role:
 
 ```sql
--- Example: AI can only see non-sensitive user data
-CREATE POLICY ai_agent_users ON auth.users
+-- AI can only see non-sensitive, public data
+CREATE POLICY ai_agent_products ON public.products
   FOR SELECT TO ai_agent
-  USING (raw_user_meta_data->>'is_public' = 'true');
+  USING (is_public = true);
+
+-- AI can only see anonymized user data
+CREATE POLICY ai_agent_users ON public.user_profiles
+  FOR SELECT TO ai_agent
+  USING (
+    privacy_setting = 'public' 
+    AND sensitive_data IS NULL
+  );
+
+-- AI cannot access admin data
+CREATE POLICY ai_agent_no_admin ON public.admin_settings
+  FOR SELECT TO ai_agent
+  USING (false);
 ```
 
-> ⚠️ **Warning**: The `SERVICE_ROLE_KEY` bypasses RLS. Only use in trusted environments.
+### 5. Environment-Specific Configuration
+
+| Environment | Recommended Mode | Key Type | Features |
+|-------------|------------------|----------|----------|
+| **Development** | Read-Write | SERVICE_ROLE_KEY | All |
+| **Staging** | Read-Only | SERVICE_ROLE_KEY | database,debugging |
+| **Production** | Read-Only | ANON_KEY + Custom Role | database,docs |
+
+```bash
+# Development (full access)
+supabase-mcp-sf --features database,operations,storage,auth
+
+# Staging (monitoring only)
+supabase-mcp-sf --read-only --features database,debugging,docs
+
+# Production (minimal, safe access)
+supabase-mcp-sf --read-only --features database,docs
+```
+
+### 6. Security Checklist
+
+Before deploying AI access to your Supabase instance:
+
+- [ ] Enable RLS on ALL tables containing user data
+- [ ] Create dedicated AI agent role with minimal permissions
+- [ ] Use `--read-only` mode in production
+- [ ] Never expose SERVICE_ROLE_KEY to clients
+- [ ] Limit features using `--features` flag
+- [ ] Regularly audit AI query logs via `get_logs`
+- [ ] Set up alerts for unusual database activity
+- [ ] Rotate secrets periodically using `rotate_secret`
+
+### 7. Audit and Monitoring
+
+Use the debugging tools to monitor AI activity:
+
+```
+"Show me all database queries from the last hour and flag any suspicious patterns"
+```
+
+```
+"Check the logs for any failed authentication attempts or permission errors"
+```
 
 ## Integration with Server Panel / PaaS
 
