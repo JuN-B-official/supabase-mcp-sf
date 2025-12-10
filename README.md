@@ -88,6 +88,36 @@ docker compose -f docker-compose.mcp.yml up -d
 }
 ```
 
+### Troubleshooting: Antigravity IDE
+If you encounter an Error: calling "initialize": EOF when connecting to Antigravity, it indicates that environment variables are failing to load at startup.
+
+To resolve this, configure your mcp_config.json to pass credentials directly via args CLI arguments instead of using the env object.
+
+File Location: ~/.gemini/antigravity/mcp_config.json
+
+```json
+{
+  "mcpServers": {
+    "supabase-mcp-sf": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@jun-b/supabase-mcp-sf@latest",
+        "--supabase-url",
+        "YOUR_SUPABASE_URL",
+        "--service-role-key",
+        "YOUR_SERVICE_ROLE_KEY",
+        "--anon-key",
+        "YOUR_ANON_KEY"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
+Note: The --anon-key is optional but recommended for client-side operations that respect Row Level Security (RLS). Ensure you use the correct keys for --service-role-key (admin access) and --anon-key (public access).
+
 ### Environment Variables
 
 | Variable                      | Required | Description              |
